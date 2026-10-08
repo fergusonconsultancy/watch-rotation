@@ -41,7 +41,29 @@ button { cursor: pointer; border: 0; background: transparent; padding: 0; -webki
 main { flex: 1; min-height: 0; overflow-y: auto; padding: calc(env(safe-area-inset-top, 0px) + 20px) var(--gutter) 28px; }
 .wrap { width: 100%; max-width: 480px; margin: 0 auto; }
 .view { display: none; flex-direction: column; gap: 24px; }
-#app[data-tab="today"] #today, #app[data-tab="calendar"] #calendar, #app[data-tab="collection"] #collection { display: flex; }
+#app[data-tab="today"] #today, #app[data-tab="calendar"] #calendar, #app[data-tab="collection"] #collection, #app[data-tab="wishlist"] #wishlist { display: flex; }
+
+/* Wishlist */
+.wish-sum { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.stat { padding: 14px 16px; border-radius: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.stat b { font-family: var(--display); font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: lining-nums tabular-nums; }
+.stat span { font-size: 13px; color: var(--muted); }
+.wishes { display: flex; flex-direction: column; gap: 8px; }
+.wish { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px; background: var(--surface); }
+.wish-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.wish .nm { font-family: var(--display); font-size: 21px; font-weight: 700; line-height: 1.15; min-width: 0; }
+.wish .pr { font-family: var(--mono); font-size: 14px; white-space: nowrap; color: var(--gold); }
+.meters { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.meter { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.meter .ticks { display: flex; gap: 2px; }
+.meter .ticks i { width: 4px; height: 12px; border-radius: 1px; background: var(--line); }
+.meter .ticks i.on { background: var(--gold); }
+.meter b { font-family: var(--mono); font-weight: 500; color: var(--text); min-width: 16px; }
+.specs { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.wish .note { font-size: 13px; font-style: italic; color: var(--muted); }
+.wish .row .btn { min-height: 44px; padding: 0 14px; font-size: 14px; }
+a.btn { text-decoration: none; color: inherit; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 
 .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 h1, h2 { margin: 0; font-family: var(--display); font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
@@ -132,7 +154,7 @@ dialog::backdrop { background: rgba(10, 6, 4, 0.7); }
 .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 
 nav { border-top: 1px solid var(--line); background: var(--ground); padding: 8px var(--gutter) calc(env(safe-area-inset-bottom, 0px) + 10px); }
-nav div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 480px; margin: 0 auto; }
+nav div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 520px; margin: 0 auto; }
 nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; font-size: 12px; font-weight: 600; color: var(--muted); }
 nav button[aria-pressed="true"] { color: var(--text); }
 nav button[aria-pressed="true"] svg { color: var(--gold); }
@@ -143,7 +165,7 @@ nav button[aria-pressed="true"] svg { color: var(--gold); }
   #today { display: none; }
   #app[data-tab="today"] #today { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 56px; align-items: start; }
   #today .col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
-  #calendar, #collection { max-width: 640px; margin: 0 auto; }
+  #calendar, #collection, #wishlist { max-width: 640px; margin: 0 auto; }
   .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .day { min-height: 80px; }
   .day .ab { font-size: 11px; }
@@ -158,6 +180,7 @@ nav button[aria-pressed="true"] svg { color: var(--gold); }
       <section class="view" id="today" aria-label="Today"></section>
       <section class="view" id="calendar" aria-label="Calendar"></section>
       <section class="view" id="collection" aria-label="Collection"></section>
+      <section class="view" id="wishlist" aria-label="Wishlist"></section>
     </div>
   </main>
   <nav aria-label="Main">
@@ -173,6 +196,10 @@ nav button[aria-pressed="true"] svg { color: var(--gold); }
       <button data-action="tab" data-tab="collection" aria-pressed="false">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg>
         <span>Collection</span>
+      </button>
+      <button data-action="tab" data-tab="wishlist" aria-pressed="false">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>
+        <span>Wishlist</span>
       </button>
     </div>
   </nav>
@@ -200,14 +227,16 @@ var PALETTE = ['#E2B04A', '#4FB3A9', '#E97A5B', '#7DA9E8', '#A3C27A', '#C38BD6',
 var NEGLECT_DAYS = 14;
 
 // ---------- state ----------
-var data = { v: 1, watches: [], wears: {}, lastBackup: null };
-var ui = { tab: 'today', range: 90, month: null, editDate: null, editWatch: null, editingWatch: null, newColor: null, importPreview: null, msg: '' };
+var data = { v: 1, watches: [], wears: {}, wishlist: [], lastBackup: null };
+var ui = { tab: 'today', range: 90, month: null, editDate: null, editWatch: null, editingWatch: null, newColor: null, importPreview: null, msg: '',
+  wishSort: 'priority', editingWish: null, addingWish: false, confirmDelete: null, wishMsg: '' };
 
 function load() {
   try {
     var raw = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (raw && Array.isArray(raw.watches) && raw.wears && typeof raw.wears === 'object') data = raw;
   } catch (e) { /* storage unavailable: run in memory */ }
+  if (!Array.isArray(data.wishlist)) data.wishlist = [];
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { ui.msg = 'Couldn’t save on this device. Check that Chrome isn’t in incognito mode.'; } }
 
@@ -384,8 +413,7 @@ function renderCollection() {
     '<div class="panel"><h2>Backup</h2><p class="msg">Your history is stored only on this phone. Save a backup file regularly, and use it to restore after a reset or move to a new phone.' +
       (data.lastBackup ? ' Last backup: ' + esc(longDate(data.lastBackup)) + '.' : ' No backup saved yet.') + '</p>' +
       '<div class="row"><button class="btn quiet" data-action="export">Save backup file</button><button class="btn quiet" data-action="pick-import">Restore from file</button></div>' +
-      (imp ? '<div class="nudge"><p>This file holds <b>' + plural(imp.watches.length, 'watch', 'watches') + '</b> and <b>' + plural(Object.keys(imp.wears).length, 'logged day') + '</b>.</p>' +
-        '<div class="row"><button class="btn primary" data-action="import-replace">Replace everything</button>' + (data.watches.length ? '<button class="btn quiet" data-action="import-merge">Merge with current</button>' : '') + '<button class="btn quiet" data-action="import-cancel">Cancel</button></div></div>' : '') +
+      (imp ? importPreviewHtml(imp) : '') +
       (ui.msg ? '<p class="msg" role="status">' + esc(ui.msg) + '</p>' : '') +
     '</div>';
 }
@@ -402,10 +430,96 @@ function editPanel(w) {
     '<p class="msg">Retiring keeps its history in your stats but removes it from today’s choices.</p></form>';
 }
 
+function importPreviewHtml(imp) {
+  var parts = [];
+  if (imp.watches.length) parts.push('<b>' + plural(imp.watches.length, 'watch', 'watches') + '</b>');
+  if (Object.keys(imp.wears).length) parts.push('<b>' + plural(Object.keys(imp.wears).length, 'logged day') + '</b>');
+  if (imp.wishlist.length) parts.push('<b>' + plural(imp.wishlist.length, 'wishlist piece') + '</b>');
+  var listText = parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0];
+  var wishOnly = !imp.watches.length;
+  var buttons = wishOnly
+    ? '<button class="btn primary" data-action="import-merge">Add to my wishlist</button>'
+    : '<button class="btn primary" data-action="import-replace">Replace everything</button>' + (data.watches.length ? '<button class="btn quiet" data-action="import-merge">Merge with current</button>' : '');
+  return '<div class="nudge"><p>This file holds ' + listText + '.' + (wishOnly ? ' Your watches and wear history won’t change.' : '') + '</p>' +
+    '<div class="row">' + buttons + '<button class="btn quiet" data-action="import-cancel">Cancel</button></div></div>';
+}
+
+// ---------- render: wishlist ----------
+function money(n) { return n == null ? null : '£' + Math.round(n).toLocaleString('en-GB'); }
+function score(i) { return (i.desire || 0) * (i.urgency || 0); }
+function sortedWishes() {
+  var list = data.wishlist.slice();
+  if (ui.wishSort === 'desire') list.sort(function (a, b) { return (b.desire || 0) - (a.desire || 0) || (b.urgency || 0) - (a.urgency || 0); });
+  else if (ui.wishSort === 'price') list.sort(function (a, b) { return (a.price == null) - (b.price == null) || (a.price || 0) - (b.price || 0); });
+  else list.sort(function (a, b) { return score(b) - score(a) || (b.desire || 0) - (a.desire || 0); });
+  return list;
+}
+function ticks(n) {
+  var s = '';
+  for (var i = 1; i <= 10; i++) s += '<i' + (i <= (n || 0) ? ' class="on"' : '') + '></i>';
+  return '<span class="ticks" aria-hidden="true">' + s + '</span>';
+}
+function safeLink(u) { return typeof u === 'string' && /^https?:\/\//i.test(u) ? u : null; }
+function specLine(i) {
+  var bits = [];
+  if (i.size) bits.push(i.size + ' mm case');
+  if (i.l2l) bits.push(i.l2l + ' mm lug to lug');
+  if (i.thick) bits.push(i.thick + ' mm thick');
+  if (i.lug) bits.push(i.lug + ' mm lugs');
+  return bits.join(' · ');
+}
+function wishCard(i) {
+  if (ui.editingWish === i.id) return wishForm(i);
+  var link = safeLink(i.link), specs = specLine(i);
+  return '<div class="wish">' +
+    '<div class="wish-top"><span class="nm">' + esc(i.name) + '</span><span class="pr">' + (money(i.price) || 'Price TBC') + '</span></div>' +
+    '<div class="meters"><span class="meter">Desire ' + ticks(i.desire) + '<b>' + (i.desire || '–') + '</b></span><span class="meter">Urgency ' + ticks(i.urgency) + '<b>' + (i.urgency || '–') + '</b></span></div>' +
+    (specs ? '<div class="specs">' + esc(specs) + '</div>' : '') +
+    (i.note ? '<div class="note">' + esc(i.note) + '</div>' : '') +
+    '<div class="row">' + (link ? '<a class="btn quiet" href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">Visit site</a>' : '') +
+    '<button class="btn quiet" data-action="edit-wish" data-id="' + i.id + '">Edit</button></div></div>';
+}
+function wishForm(i) {
+  var isNew = !i, v = i || {};
+  function f(id, label, val, attrs) { return '<div class="field"><label for="' + id + '">' + label + '</label><input class="input" id="' + id + '" value="' + esc(val == null ? '' : val) + '" ' + attrs + '></div>'; }
+  var num = 'type="number" inputmode="decimal" step="0.01" min="0"';
+  var deleting = !isNew && ui.confirmDelete === v.id;
+  return '<form class="panel" id="wishForm" data-id="' + (isNew ? '' : v.id) + '"><h2>' + (isNew ? 'Add to wishlist' : 'Edit wishlist piece') + '</h2>' +
+    f('wName', 'Name', v.name, 'maxlength="80" required autocomplete="off" placeholder="e.g. Fears Brunswick 38"') +
+    '<div class="grid2">' + f('wDesire', 'Desire (1 to 10)', v.desire, 'type="number" inputmode="numeric" min="1" max="10"') + f('wUrgency', 'Urgency (1 to 10)', v.urgency, 'type="number" inputmode="numeric" min="1" max="10"') + '</div>' +
+    f('wPrice', 'Price (£)', v.price, 'type="number" inputmode="decimal" min="0" step="1"') +
+    '<div class="grid2">' + f('wSize', 'Case (mm)', v.size, num) + f('wL2l', 'Lug to lug (mm)', v.l2l, num) + f('wThick', 'Thickness (mm)', v.thick, num) + f('wLug', 'Lug width (mm)', v.lug, num) + '</div>' +
+    f('wLink', 'Link', v.link, 'type="url" inputmode="url" autocomplete="off" placeholder="https://"') +
+    f('wNote', 'Note', v.note, 'maxlength="200" autocomplete="off" placeholder="e.g. Expected 2027"') +
+    '<div class="row"><button type="submit" class="btn primary">' + (isNew ? 'Add' : 'Save') + '</button>' +
+    (isNew ? '' : '<button type="button" class="btn quiet" data-action="bought-wish" data-id="' + v.id + '">I bought it</button>' +
+      '<button type="button" class="btn danger" data-action="delete-wish" data-id="' + v.id + '">' + (deleting ? 'Tap again to delete' : 'Delete') + '</button>') +
+    '<button type="button" class="btn quiet" data-action="cancel-wish">Cancel</button></div>' +
+    (isNew ? '' : '<p class="msg">“I bought it” moves it into your collection, ready to log.</p>') + '</form>';
+}
+function renderWishlist() {
+  var el = $('wishlist'), list = sortedWishes();
+  var priced = data.wishlist.filter(function (i) { return i.price != null; });
+  var total = priced.reduce(function (s, i) { return s + i.price; }, 0);
+  var top = data.wishlist.slice().sort(function (a, b) { return score(b) - score(a); })[0];
+  var segs = [['priority', 'PRIORITY'], ['desire', 'DESIRE'], ['price', 'PRICE']].map(function (s) {
+    return '<button type="button" data-action="wish-sort" data-sort="' + s[0] + '" aria-pressed="' + (ui.wishSort === s[0]) + '">' + s[1] + '</button>';
+  }).join('');
+  el.innerHTML =
+    '<div><div class="eyebrow">Wishlist</div><h1>' + (data.wishlist.length ? plural(data.wishlist.length, 'piece') + ' on the list' : 'Nothing on the list yet') + '</h1></div>' +
+    (data.wishlist.length ?
+      '<div class="wish-sum"><div class="stat"><span>Top priority</span><b style="font-size:20px">' + esc(top.name) + '</b></div>' +
+      '<div class="stat"><span>The lot' + (priced.length < data.wishlist.length ? ' (' + priced.length + ' priced)' : '') + '</span><b>' + money(total) + '</b></div></div>' +
+      '<div class="dial-head"><h2>Sorted by</h2><div class="seg" role="group" aria-label="Sort wishlist">' + segs + '</div></div>' : '<p class="lede">Add the pieces you’re considering, with how much you want each and how soon. Priority is desire multiplied by urgency.</p>') +
+    (ui.wishMsg ? '<p class="msg" role="status">' + esc(ui.wishMsg) + '</p>' : '') +
+    (ui.addingWish ? wishForm(null) : '<div class="row"><button class="btn primary" data-action="add-wish">Add to wishlist</button></div>') +
+    '<div class="wishes">' + list.map(wishCard).join('') + '</div>';
+}
+
 function render() {
   $('app').dataset.tab = ui.tab;
   Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.tab === ui.tab)); });
-  renderToday(); renderCalendar(); renderCollection();
+  renderToday(); renderCalendar(); renderCollection(); renderWishlist();
 }
 
 // ---------- day editor ----------
@@ -433,7 +547,7 @@ function closeDay() { var dlg = $('dayDialog'); if (dlg.close) dlg.close(); else
 
 // ---------- backup ----------
 function exportBackup() {
-  var payload = JSON.stringify({ app: 'rotation', v: 1, exported: new Date().toISOString(), watches: data.watches, wears: data.wears }, null, 2);
+  var payload = JSON.stringify({ app: 'rotation', v: 1, exported: new Date().toISOString(), watches: data.watches, wears: data.wears, wishlist: data.wishlist }, null, 2);
   var blob = new Blob([payload], { type: 'application/json' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -445,7 +559,9 @@ function exportBackup() {
   render();
 }
 function validBackup(j) {
-  if (!j || !Array.isArray(j.watches) || !j.wears || typeof j.wears !== 'object') return null;
+  if (!j || typeof j !== 'object') return null;
+  if (!Array.isArray(j.watches)) j.watches = [];
+  if (!j.wears || typeof j.wears !== 'object') j.wears = {};
   var ids = {};
   var watches = j.watches.filter(function (w) { return w && typeof w.id === 'string' && typeof w.name === 'string'; }).map(function (w) {
     ids[w.id] = true;
@@ -456,7 +572,23 @@ function validBackup(j) {
     var e = j.wears[d];
     if (/^\d{4}-\d{2}-\d{2}$/.test(d) && e && ids[e.w]) wears[d] = { w: e.w, note: typeof e.note === 'string' ? e.note.slice(0, 120) : '' };
   });
-  return watches.length ? { watches: watches, wears: wears } : null;
+  var wishlist = (Array.isArray(j.wishlist) ? j.wishlist : []).filter(function (i) { return i && typeof i.name === 'string' && i.name.trim(); }).map(cleanWish);
+  return watches.length || wishlist.length ? { watches: watches, wears: wears, wishlist: wishlist } : null;
+}
+function numOrNull(v, max) {
+  if (v === '' || v == null) return null;
+  var n = parseFloat(v);
+  return isFinite(n) && n >= 0 ? Math.min(n, max) : null;
+}
+function cleanWish(i) {
+  var lvl = function (v) { var n = numOrNull(v, 10); return n == null ? null : Math.max(1, Math.round(n)); };
+  return {
+    id: typeof i.id === 'string' && i.id ? i.id : 'x' + uid(), name: String(i.name).trim().slice(0, 80),
+    desire: lvl(i.desire), urgency: lvl(i.urgency), price: numOrNull(i.price, 10000000),
+    size: numOrNull(i.size, 99), l2l: numOrNull(i.l2l, 99), thick: numOrNull(i.thick, 99), lug: numOrNull(i.lug, 99),
+    link: safeLink(typeof i.link === 'string' ? i.link.trim().slice(0, 500) : '') || '',
+    note: typeof i.note === 'string' ? i.note.trim().slice(0, 200) : ''
+  };
 }
 
 // ---------- events ----------
@@ -464,7 +596,7 @@ document.addEventListener('click', function (ev) {
   var b = ev.target.closest('[data-action]');
   if (!b) return;
   var a = b.dataset.action, t = todayIso();
-  if (a === 'tab') { ui.tab = b.dataset.tab; ui.msg = ''; render(); main().scrollTop = 0; }
+  if (a === 'tab') { ui.tab = b.dataset.tab; ui.msg = ''; ui.wishMsg = ''; ui.confirmDelete = null; render(); main().scrollTop = 0; }
   else if (a === 'wear') {
     var cur = data.wears[t];
     if (cur && cur.w === b.dataset.id) delete data.wears[t];
@@ -495,13 +627,37 @@ document.addEventListener('click', function (ev) {
   else if (a === 'import-cancel') { ui.importPreview = null; renderCollection(); }
   else if (a === 'import-replace' || a === 'import-merge') {
     var imp = ui.importPreview; if (!imp) return;
-    if (a === 'import-replace') data = { v: 1, watches: imp.watches, wears: imp.wears, lastBackup: data.lastBackup };
+    if (a === 'import-replace') data = { v: 1, watches: imp.watches, wears: imp.wears, wishlist: imp.wishlist, lastBackup: data.lastBackup };
     else {
       imp.watches.forEach(function (w) { if (!watch(w.id)) data.watches.push(w); });
       Object.keys(imp.wears).forEach(function (d) { data.wears[d] = imp.wears[d]; });
+      var have = {}; data.wishlist.forEach(function (i) { have[i.id] = true; });
+      imp.wishlist.forEach(function (i) { if (!have[i.id]) data.wishlist.push(i); });
     }
-    ui.importPreview = null; ui.msg = 'Restored ' + plural(Object.keys(imp.wears).length, 'logged day') + '.';
+    var done = [];
+    if (Object.keys(imp.wears).length) done.push(plural(Object.keys(imp.wears).length, 'logged day'));
+    if (imp.wishlist.length) done.push(plural(imp.wishlist.length, 'wishlist piece'));
+    ui.importPreview = null; ui.msg = 'Restored ' + (done.join(' and ') || 'your watches') + '.';
+    if (!imp.watches.length) { ui.tab = 'wishlist'; ui.wishMsg = ui.msg; }
     save(); render();
+  }
+  else if (a === 'wish-sort') { ui.wishSort = b.dataset.sort; renderWishlist(); }
+  else if (a === 'add-wish') { ui.addingWish = true; ui.editingWish = null; ui.wishMsg = ''; renderWishlist(); $('wName').focus(); }
+  else if (a === 'edit-wish') { ui.editingWish = b.dataset.id; ui.addingWish = false; ui.confirmDelete = null; ui.wishMsg = ''; renderWishlist(); var fm = $('wishForm'); if (fm) fm.scrollIntoView({ block: 'start' }); }
+  else if (a === 'cancel-wish') { ui.editingWish = null; ui.addingWish = false; ui.confirmDelete = null; renderWishlist(); }
+  else if (a === 'delete-wish') {
+    if (ui.confirmDelete !== b.dataset.id) { ui.confirmDelete = b.dataset.id; renderWishlist(); $('wishForm').scrollIntoView({ block: 'start' }); return; }
+    var gone = data.wishlist.filter(function (i) { return i.id === b.dataset.id; })[0];
+    data.wishlist = data.wishlist.filter(function (i) { return i.id !== b.dataset.id; });
+    ui.editingWish = null; ui.confirmDelete = null; ui.wishMsg = (gone ? gone.name : 'Piece') + ' removed from the wishlist.';
+    save(); renderWishlist();
+  }
+  else if (a === 'bought-wish') {
+    var item = data.wishlist.filter(function (i) { return i.id === b.dataset.id; })[0]; if (!item) return;
+    data.watches.push({ id: uid(), name: item.name.slice(0, 60), color: nextColor(), added: todayIso(), retired: false });
+    data.wishlist = data.wishlist.filter(function (i) { return i.id !== item.id; });
+    ui.editingWish = null; ui.tab = 'collection'; ui.msg = item.name + ' is now in your collection.';
+    save(); render(); main().scrollTop = 0;
   }
 });
 function main() { return document.querySelector('main'); }
@@ -536,6 +692,17 @@ document.addEventListener('submit', function (ev) {
     data.watches.push({ id: uid(), name: name, color: ui.newColor || nextColor(), added: todayIso(), retired: false });
     ui.newColor = null; ui.msg = name + ' added.';
     save(); render(); $('newName').focus();
+  }
+  if (ev.target.id === 'wishForm') {
+    var id = ev.target.dataset.id;
+    var item = cleanWish({ id: id || 'x' + uid(), name: $('wName').value, desire: $('wDesire').value, urgency: $('wUrgency').value, price: $('wPrice').value,
+      size: $('wSize').value, l2l: $('wL2l').value, thick: $('wThick').value, lug: $('wLug').value, link: $('wLink').value, note: $('wNote').value });
+    if (!item.name) return;
+    if (id) data.wishlist = data.wishlist.map(function (i) { return i.id === id ? item : i; });
+    else data.wishlist.push(item);
+    ui.editingWish = null; ui.addingWish = false; ui.wishMsg = item.name + (id ? ' updated.' : ' added to the wishlist.');
+    save(); renderWishlist();
+    return;
   }
   if (ev.target.id === 'editForm') {
     var w = watch(ev.target.dataset.id), nm = $('editName').value.trim();

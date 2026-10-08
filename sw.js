@@ -1,5 +1,5 @@
 // Keeps the app working offline. Your data is never sent anywhere; it stays in this browser.
-const CACHE = 'rotation-shell-v2';
+const CACHE = 'rotation-shell-v3';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
 self.addEventListener('install', (event) => {
