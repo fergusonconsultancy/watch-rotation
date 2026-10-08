@@ -1,0 +1,16 @@
+{
+  "name": "Rotation",
+  "short_name": "Rotation",
+  "description": "A watch rotation tracker: what you wore, what you're neglecting, and how your collection really gets used.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#21150F",
+  "theme_color": "#21150F",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

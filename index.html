@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rotation</title>
+<meta name="description" content="A watch rotation tracker: what you wore, what you're neglecting, and how your collection really gets used.">
+<meta name="theme-color" content="#21150F">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500..800&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column on the cover screen; on the unfolded screen the dial sits beside the log. Single dark "chocolate dial" look by choice. */
+:root {
+  color-scheme: dark;
+  --ground: #21150F;
+  --surface: #2E1F17;
+  --raised: #3B291F;
+  --line: #4A3528;
+  --text: #F5EADF;
+  --muted: #BFA996;
+  --gold: #E2B04A;
+  --danger: #F08A6E;
+  --display: 'Bodoni Moda', 'Didot', 'Bodoni 72', Georgia, serif;
+  --body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --gutter: 16px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--body); font-size: 16px; -webkit-font-smoothing: antialiased; overscroll-behavior-y: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: transparent; padding: 0; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+#app { height: 100%; display: flex; flex-direction: column; }
+main { flex: 1; min-height: 0; overflow-y: auto; padding: calc(env(safe-area-inset-top, 0px) + 20px) var(--gutter) 28px; }
+.wrap { width: 100%; max-width: 480px; margin: 0 auto; }
+.view { display: none; flex-direction: column; gap: 24px; }
+#app[data-tab="today"] #today, #app[data-tab="calendar"] #calendar, #app[data-tab="collection"] #collection { display: flex; }
+
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+h1, h2 { margin: 0; font-family: var(--display); font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+h1 { font-size: 44px; line-height: 1.02; }
+h2 { font-size: 26px; line-height: 1.1; }
+.lede { font-size: 15px; color: var(--muted); line-height: 1.45; }
+
+/* Today */
+.wrist { display: flex; flex-direction: column; gap: 10px; }
+.wrist h1 em { font-style: italic; color: var(--gold); }
+.chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.chip { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 14px; border-radius: 16px; background: var(--surface); text-align: left; border: 1px solid transparent; }
+.chip i { flex: none; width: 12px; height: 12px; border-radius: 6px; }
+.chip span { min-width: 0; font-size: 15px; font-weight: 600; line-height: 1.2; }
+.chip small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.chip[aria-pressed="true"] { background: var(--raised); border-color: var(--gold); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 13px; font-weight: 600; color: var(--muted); }
+.input { width: 100%; min-height: 48px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 16px; outline: none; }
+.input:focus { border-color: var(--muted); }
+.input::placeholder { color: #8C7767; }
+
+.nudge { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); }
+.nudge p { margin: 0; font-size: 15px; line-height: 1.45; }
+.nudge b { font-weight: 700; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border-radius: 14px; font-size: 15px; font-weight: 700; }
+.btn.primary { background: var(--gold); color: #21150F; }
+.btn.quiet { border: 1px solid var(--line); }
+.btn.danger { border: 1px solid var(--line); color: var(--danger); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Dial */
+.dial-card { display: flex; flex-direction: column; gap: 16px; }
+.dial-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.seg { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 24px; }
+.seg button { min-width: 48px; height: 40px; padding: 0 12px; border-radius: 20px; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--text); color: var(--ground); }
+.dial { position: relative; width: 100%; max-width: 320px; aspect-ratio: 1; margin: 0 auto; }
+.dial svg { display: block; width: 100%; height: 100%; }
+.dial-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 2px; pointer-events: none; }
+.dial-center b { font-family: var(--display); font-size: 52px; font-weight: 700; line-height: 1; }
+.dial-center span { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+.legend { display: flex; flex-direction: column; }
+.leg { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; align-items: center; column-gap: 12px; min-height: 44px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.leg i { width: 12px; height: 12px; border-radius: 6px; }
+.leg .n { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leg .c { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.leg .p { font-family: var(--mono); font-size: 13px; min-width: 44px; text-align: right; }
+
+/* Calendar */
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cal-nav { display: flex; gap: 8px; }
+.icon-btn { width: 48px; height: 48px; border-radius: 24px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; }
+.icon-btn:disabled { opacity: 0.35; cursor: default; }
+.grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.dow { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; padding-bottom: 4px; }
+.day { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px; min-height: 64px; padding: 8px 2px; border-radius: 12px; background: var(--surface); }
+.day:disabled { background: transparent; cursor: default; }
+.day .num { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.day.today .num { color: var(--gold); font-weight: 500; }
+.day i { width: 14px; height: 14px; border-radius: 7px; }
+.day .ab { font-size: 10px; font-weight: 600; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+.day.blank { background: transparent; min-height: 0; }
+.month-sum { font-size: 14px; color: var(--muted); line-height: 1.45; }
+
+/* Collection */
+.watches { display: flex; flex-direction: column; gap: 8px; }
+.watch { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; column-gap: 14px; padding: 14px 8px 14px 16px; border-radius: 18px; background: var(--surface); }
+.watch i { width: 14px; height: 14px; border-radius: 7px; }
+.watch .meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.watch .nm { font-family: var(--display); font-size: 20px; font-weight: 700; line-height: 1.15; }
+.watch .st { font-size: 13px; color: var(--muted); }
+.bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.bar b { display: block; height: 4px; border-radius: 2px; }
+.watch .edit { width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.watch.retired { opacity: 0.6; }
+.panel { display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 20px; border: 1px solid var(--line); }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { width: 44px; height: 44px; border-radius: 22px; border: 3px solid transparent; }
+.swatch[aria-pressed="true"] { border-color: var(--text); }
+.msg { font-size: 14px; color: var(--muted); line-height: 1.45; }
+.msg.warn { color: var(--danger); }
+
+/* Sheet for editing a day */
+dialog { width: min(480px, calc(100% - 24px)); max-height: calc(100% - 48px); padding: 0; border: 1px solid var(--line); border-radius: 24px; background: var(--ground); color: var(--text); }
+dialog::backdrop { background: rgba(10, 6, 4, 0.7); }
+.sheet { display: flex; flex-direction: column; gap: 18px; padding: 20px; }
+.sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+
+nav { border-top: 1px solid var(--line); background: var(--ground); padding: 8px var(--gutter) calc(env(safe-area-inset-bottom, 0px) + 10px); }
+nav div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 480px; margin: 0 auto; }
+nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; font-size: 12px; font-weight: 600; color: var(--muted); }
+nav button[aria-pressed="true"] { color: var(--text); }
+nav button[aria-pressed="true"] svg { color: var(--gold); }
+
+@media (min-width: 720px) {
+  :root { --gutter: 32px; }
+  .wrap { max-width: 1000px; }
+  #today { display: none; }
+  #app[data-tab="today"] #today { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 56px; align-items: start; }
+  #today .col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+  #calendar, #collection { max-width: 640px; margin: 0 auto; }
+  .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .day { min-height: 80px; }
+  .day .ab { font-size: 11px; }
+}
+@media (max-width: 719px) { #today .col { display: contents; } }
+</style>
+</head>
+<body>
+<div id="app" data-tab="today">
+  <main>
+    <div class="wrap">
+      <section class="view" id="today" aria-label="Today"></section>
+      <section class="view" id="calendar" aria-label="Calendar"></section>
+      <section class="view" id="collection" aria-label="Collection"></section>
+    </div>
+  </main>
+  <nav aria-label="Main">
+    <div>
+      <button data-action="tab" data-tab="today" aria-pressed="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="6"></circle><path d="M9 6.5L10 2h4l1 4.5M9 17.5L10 22h4l1-4.5M12 9.5V12l1.5 1.5"></path></svg>
+        <span>Today</span>
+      </button>
+      <button data-action="tab" data-tab="calendar" aria-pressed="false">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg>
+        <span>Calendar</span>
+      </button>
+      <button data-action="tab" data-tab="collection" aria-pressed="false">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg>
+        <span>Collection</span>
+      </button>
+    </div>
+  </nav>
+
+  <dialog id="dayDialog" aria-labelledby="dayTitle">
+    <form class="sheet" method="dialog" id="dayForm">
+      <div class="sheet-head">
+        <div><div class="eyebrow" id="dayEyebrow">Edit day</div><h2 id="dayTitle"></h2></div>
+        <button type="button" class="icon-btn" data-action="close-day" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+      <div class="chips" id="dayChips"></div>
+      <div class="field"><label for="dayNote">Note (occasion, strap)</label><input class="input" id="dayNote" maxlength="120" placeholder="e.g. Wedding, brown leather strap" autocomplete="off"></div>
+      <div class="row"><button type="button" class="btn primary" data-action="save-day">Save</button><button type="button" class="btn danger" data-action="clear-day" id="clearDay">Clear this day</button></div>
+    </form>
+  </dialog>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+var KEY = 'rotation.v1';
+var PALETTE = ['#E2B04A', '#4FB3A9', '#E97A5B', '#7DA9E8', '#A3C27A', '#C38BD6', '#D9C4A0', '#E58FB0', '#6FCF97', '#F2C94C'];
+var NEGLECT_DAYS = 14;
+
+// ---------- state ----------
+var data = { v: 1, watches: [], wears: {}, lastBackup: null };
+var ui = { tab: 'today', range: 90, month: null, editDate: null, editWatch: null, editingWatch: null, newColor: null, importPreview: null, msg: '' };
+
+function load() {
+  try {
+    var raw = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (raw && Array.isArray(raw.watches) && raw.wears && typeof raw.wears === 'object') data = raw;
+  } catch (e) { /* storage unavailable: run in memory */ }
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { ui.msg = 'Couldn’t save on this device. Check that Chrome isn’t in incognito mode.'; } }
+
+// ---------- dates ----------
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function parse(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 12); }
+function todayIso() { return iso(new Date()); }
+function addDays(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return iso(d); }
+function daysBetween(a, b) { return Math.round((parse(b) - parse(a)) / 86400000); }
+var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+function longDate(s) { var d = parse(s); return DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; }
+
+// ---------- helpers ----------
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function watch(id) { return data.watches.filter(function (w) { return w.id === id; })[0] || null; }
+function active() { return data.watches.filter(function (w) { return !w.retired; }); }
+function uid() { return 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function nextColor() {
+  var used = data.watches.map(function (w) { return w.color; });
+  return PALETTE.filter(function (c) { return used.indexOf(c) === -1; })[0] || PALETTE[data.watches.length % PALETTE.length];
+}
+function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
+
+// Last date each watch was worn, and wear counts within a window.
+function lastWorn() {
+  var out = {};
+  Object.keys(data.wears).forEach(function (d) { var w = data.wears[d].w; if (!out[w] || d > out[w]) out[w] = d; });
+  return out;
+}
+function counts(rangeDays) {
+  var from = rangeDays ? addDays(todayIso(), -(rangeDays - 1)) : '0000-00-00', c = {}, total = 0;
+  Object.keys(data.wears).forEach(function (d) {
+    if (d < from || d > todayIso()) return;
+    var w = data.wears[d].w; if (!watch(w)) return;
+    c[w] = (c[w] || 0) + 1; total++;
+  });
+  return { c: c, total: total };
+}
+function idleDays(w, last) {
+  var since = last[w.id] || w.added || todayIso();
+  return daysBetween(since, todayIso());
+}
+function mostNeglected() {
+  var last = lastWorn(), worn = data.wears[todayIso()];
+  var list = active().filter(function (w) { return !worn || worn.w !== w.id; })
+    .map(function (w) { return { w: w, idle: idleDays(w, last), never: !last[w.id] }; })
+    .sort(function (a, b) { return b.idle - a.idle; });
+  return list[0] && list[0].idle >= NEGLECT_DAYS ? list[0] : null;
+}
+
+// ---------- render: today ----------
+function chipsHtml(selectedId, action) {
+  var last = lastWorn();
+  return active().map(function (w) {
+    var idle = idleDays(w, last);
+    var sub = last[w.id] ? (idle === 0 ? 'Worn today' : idle === 1 ? 'Worn yesterday' : idle + ' days ago') : 'Not worn yet';
+    return '<button type="button" class="chip" data-action="' + action + '" data-id="' + w.id + '" aria-pressed="' + (w.id === selectedId) + '"><i style="background:' + w.color + '"></i><span>' + esc(w.name) + '<small>' + sub + '</small></span></button>';
+  }).join('');
+}
+
+function dialHtml() {
+  var r = counts(ui.range), total = r.total;
+  var ws = data.watches.filter(function (w) { return r.c[w.id]; }).sort(function (a, b) { return r.c[b.id] - r.c[a.id]; });
+  var R = 120, C = 2 * Math.PI * R, gap = ws.length > 1 ? 4 : 0, offset = 0, arcs = '';
+  ws.forEach(function (w) {
+    var len = (r.c[w.id] / total) * C;
+    var dash = Math.max(len - gap, 1);
+    arcs += '<circle cx="160" cy="160" r="' + R + '" fill="none" stroke="' + w.color + '" stroke-width="22" stroke-dasharray="' + dash.toFixed(2) + ' ' + (C - dash).toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '" transform="rotate(-90 160 160)"></circle>';
+    offset += len;
+  });
+  var ticks = '';
+  for (var i = 0; i < 60; i++) {
+    var a = i / 60 * 2 * Math.PI, big = i % 5 === 0, r1 = big ? 140 : 144, r2 = 150;
+    ticks += '<line x1="' + (160 + r1 * Math.sin(a)).toFixed(1) + '" y1="' + (160 - r1 * Math.cos(a)).toFixed(1) + '" x2="' + (160 + r2 * Math.sin(a)).toFixed(1) + '" y2="' + (160 - r2 * Math.cos(a)).toFixed(1) + '" stroke="' + (big ? '#BFA996' : '#4A3528') + '" stroke-width="' + (big ? 2 : 1) + '"></line>';
+  }
+  var label = ui.range === 30 ? 'Last 30 days' : ui.range === 90 ? 'Last 90 days' : ui.range === 365 ? 'Last 12 months' : 'All time';
+  var legend = ws.length ? ws.map(function (w) {
+    return '<div class="leg"><i style="background:' + w.color + '"></i><span class="n">' + esc(w.name) + '</span><span class="c">' + plural(r.c[w.id], 'day') + '</span><span class="p">' + Math.round(r.c[w.id] / total * 100) + '%</span></div>';
+  }).join('') : '<p class="msg">Nothing logged in this period yet.</p>';
+  var segs = [[30, '30D'], [90, '90D'], [365, '1Y'], [0, 'ALL']].map(function (s) {
+    return '<button type="button" data-action="range" data-range="' + s[0] + '" aria-pressed="' + (ui.range === s[0]) + '">' + s[1] + '</button>';
+  }).join('');
+  return '<div class="dial-card"><div class="dial-head"><h2>Wrist share</h2><div class="seg" role="group" aria-label="Period">' + segs + '</div></div>' +
+    '<div class="dial"><svg viewBox="0 0 320 320" role="img" aria-label="Share of days worn per watch, ' + label.toLowerCase() + '">' +
+      '<circle cx="160" cy="160" r="' + R + '" fill="none" stroke="#2E1F17" stroke-width="22"></circle>' + arcs + ticks + '</svg>' +
+      '<div class="dial-center"><b>' + total + '</b><span>' + (total === 1 ? 'day' : 'days') + ' logged</span><span>' + label + '</span></div></div>' +
+    '<div class="legend">' + legend + '</div></div>';
+}
+
+function renderToday() {
+  var el = $('today'), t = todayIso(), entry = data.wears[t], w = entry && watch(entry.w);
+  if (!data.watches.length) {
+    el.innerHTML = '<div class="col"><div class="wrist"><div class="eyebrow">' + esc(longDate(t)) + '</div><h1>Start with your collection.</h1>' +
+      '<p class="lede">Add your watches, or restore a backup file if you already have one. Everything stays on this phone.</p></div>' +
+      '<div class="row"><button class="btn primary" data-action="tab" data-tab="collection">Add watches</button><button class="btn quiet" data-action="pick-import">Restore a backup</button></div></div>';
+    return;
+  }
+  var nudge = mostNeglected(), nudgeHtml = '';
+  if (nudge) {
+    nudgeHtml = '<div class="nudge"><div class="eyebrow">Neglected</div><p><b>' + esc(nudge.w.name) + '</b> ' +
+      (nudge.never ? 'hasn’t been worn since you added it, ' + plural(nudge.idle, 'day') + ' ago.' : 'hasn’t been on your wrist for ' + plural(nudge.idle, 'day') + '.') +
+      '</p><div class="row"><button class="btn primary" data-action="wear" data-id="' + nudge.w.id + '">Wear it today</button></div></div>';
+  }
+  var head = w ? '<h1>On the wrist: <em>' + esc(w.name) + '</em></h1>' : '<h1>What’s on the wrist today?</h1>';
+  el.innerHTML =
+    '<div class="col">' +
+      '<div class="wrist"><div class="eyebrow">' + esc(longDate(t)) + '</div>' + head + '</div>' +
+      '<div class="chips">' + chipsHtml(w ? w.id : null, 'wear') + '</div>' +
+      (w ? '<div class="field"><label for="todayNote">Note (occasion, strap)</label><input class="input" id="todayNote" maxlength="120" placeholder="e.g. Client meeting, steel bracelet" autocomplete="off" value="' + esc(entry.note || '') + '"></div>' : '') +
+      nudgeHtml + backupNudge() +
+    '</div>' +
+    '<div class="col">' + dialHtml() + '</div>';
+}
+
+function backupNudge() {
+  var n = Object.keys(data.wears).length;
+  if (n < 7) return '';
+  if (data.lastBackup && daysBetween(data.lastBackup, todayIso()) < 30) return '';
+  return '<div class="nudge"><div class="eyebrow">Backup</div><p>' + (data.lastBackup ? 'Your last backup was ' + plural(daysBetween(data.lastBackup, todayIso()), 'day') + ' ago.' : 'You haven’t backed up yet.') +
+    ' Your history lives only on this phone, so save a copy now.</p><div class="row"><button class="btn quiet" data-action="export">Save backup file</button></div></div>';
+}
+
+// ---------- render: calendar ----------
+function renderCalendar() {
+  var el = $('calendar');
+  if (!ui.month) ui.month = todayIso().slice(0, 7);
+  var y = +ui.month.slice(0, 4), m = +ui.month.slice(5, 7) - 1;
+  var first = new Date(y, m, 1, 12), days = new Date(y, m + 1, 0).getDate();
+  var lead = (first.getDay() + 6) % 7, t = todayIso(), isCurrent = ui.month >= t.slice(0, 7);
+  var cells = '';
+  for (var b = 0; b < lead; b++) cells += '<div class="day blank" aria-hidden="true"></div>';
+  var tally = {}, logged = 0;
+  for (var d = 1; d <= days; d++) {
+    var ds = ui.month + '-' + pad(d), e = data.wears[ds], w = e && watch(e.w), future = ds > t;
+    if (w) { tally[w.id] = (tally[w.id] || 0) + 1; logged++; }
+    var label = longDate(ds) + (w ? ', ' + w.name : ', nothing logged');
+    cells += '<button type="button" class="day' + (ds === t ? ' today' : '') + '" data-action="edit-day" data-date="' + ds + '"' + (future ? ' disabled' : '') + ' aria-label="' + esc(label) + '">' +
+      '<span class="num">' + d + '</span>' + (w ? '<i style="background:' + w.color + '"></i><span class="ab">' + esc(w.name.split(' ')[0]) + '</span>' : '') + '</button>';
+  }
+  var top = Object.keys(tally).sort(function (a, b) { return tally[b] - tally[a]; })[0];
+  var sum = logged ? plural(logged, 'day') + ' logged. Most worn: ' + esc(watch(top).name) + ', ' + plural(tally[top], 'day') + '.' : 'Nothing logged this month. Tap a day to add what you wore.';
+  el.innerHTML =
+    '<div class="cal-head"><div><div class="eyebrow">Calendar</div><h1>' + MONTHS[m] + ' <span style="color:var(--muted)">' + y + '</span></h1></div>' +
+      '<div class="cal-nav"><button class="icon-btn" data-action="month" data-step="-1" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>' +
+      '<button class="icon-btn" data-action="month" data-step="1" aria-label="Next month"' + (isCurrent ? ' disabled' : '') + '><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button></div></div>' +
+    '<div class="grid">' + ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (x) { return '<div class="dow">' + x + '</div>'; }).join('') + cells + '</div>' +
+    '<p class="month-sum">' + sum + '</p>';
+}
+
+// ---------- render: collection ----------
+function renderCollection() {
+  var el = $('collection'), last = lastWorn(), all = counts(0);
+  var list = data.watches.slice().sort(function (a, b) { return (a.retired ? 1 : 0) - (b.retired ? 1 : 0); });
+  var max = Math.max.apply(null, [1].concat(list.map(function (w) { return all.c[w.id] || 0; })));
+  var rows = list.map(function (w) {
+    var n = all.c[w.id] || 0, idle = idleDays(w, last);
+    var st = (w.retired ? 'Retired · ' : '') + plural(n, 'day') + ' worn · ' + (last[w.id] ? (idle === 0 ? 'on today' : 'last worn ' + plural(idle, 'day') + ' ago') : 'not worn yet');
+    if (ui.editingWatch === w.id) return editPanel(w);
+    return '<div class="watch' + (w.retired ? ' retired' : '') + '"><i style="background:' + w.color + '"></i><div class="meta"><span class="nm">' + esc(w.name) + '</span><span class="st">' + st + '</span><div class="bar"><b style="width:' + (n / max * 100) + '%;background:' + w.color + '"></b></div></div>' +
+      '<button class="edit" data-action="edit-watch" data-id="' + w.id + '" aria-label="Edit ' + esc(w.name) + '"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"></path></svg></button></div>';
+  }).join('');
+  if (!ui.newColor) ui.newColor = nextColor();
+  var imp = ui.importPreview;
+  el.innerHTML =
+    '<div><div class="eyebrow">Collection</div><h1>' + (active().length ? plural(active().length, 'watch', 'watches') + ' in rotation' : 'Your collection') + '</h1></div>' +
+    (rows ? '<div class="watches">' + rows + '</div>' : '') +
+    '<form class="panel" id="addForm"><h2>Add a watch</h2>' +
+      '<div class="field"><label for="newName">Name</label><input class="input" id="newName" maxlength="60" placeholder="e.g. Tudor Black Bay 58 925" autocomplete="off" required></div>' +
+      '<div class="field"><span style="font-size:13px;font-weight:600;color:var(--muted)">Colour</span><div class="swatches">' + swatches(ui.newColor, 'new-color') + '</div></div>' +
+      '<div class="row"><button type="submit" class="btn primary">Add watch</button></div></form>' +
+    '<div class="panel"><h2>Backup</h2><p class="msg">Your history is stored only on this phone. Save a backup file regularly, and use it to restore after a reset or move to a new phone.' +
+      (data.lastBackup ? ' Last backup: ' + esc(longDate(data.lastBackup)) + '.' : ' No backup saved yet.') + '</p>' +
+      '<div class="row"><button class="btn quiet" data-action="export">Save backup file</button><button class="btn quiet" data-action="pick-import">Restore from file</button></div>' +
+      (imp ? '<div class="nudge"><p>This file holds <b>' + plural(imp.watches.length, 'watch', 'watches') + '</b> and <b>' + plural(Object.keys(imp.wears).length, 'logged day') + '</b>.</p>' +
+        '<div class="row"><button class="btn primary" data-action="import-replace">Replace everything</button>' + (data.watches.length ? '<button class="btn quiet" data-action="import-merge">Merge with current</button>' : '') + '<button class="btn quiet" data-action="import-cancel">Cancel</button></div></div>' : '') +
+      (ui.msg ? '<p class="msg" role="status">' + esc(ui.msg) + '</p>' : '') +
+    '</div>' +
+    '<input type="file" id="importFile" accept="application/json,.json" hidden>';
+}
+function swatches(selected, action) {
+  return PALETTE.map(function (c) { return '<button type="button" class="swatch" style="background:' + c + '" data-action="' + action + '" data-color="' + c + '" aria-pressed="' + (c === selected) + '" aria-label="Colour ' + c + '"></button>'; }).join('');
+}
+function editPanel(w) {
+  return '<form class="panel" id="editForm" data-id="' + w.id + '"><h2>Edit watch</h2>' +
+    '<div class="field"><label for="editName">Name</label><input class="input" id="editName" maxlength="60" value="' + esc(w.name) + '" required></div>' +
+    '<div class="field"><span style="font-size:13px;font-weight:600;color:var(--muted)">Colour</span><div class="swatches">' + swatches(w.color, 'edit-color') + '</div></div>' +
+    '<div class="row"><button type="submit" class="btn primary">Save</button>' +
+    '<button type="button" class="btn quiet" data-action="toggle-retire" data-id="' + w.id + '">' + (w.retired ? 'Return to rotation' : 'Retire (sold or away)') + '</button>' +
+    '<button type="button" class="btn quiet" data-action="cancel-edit">Cancel</button></div>' +
+    '<p class="msg">Retiring keeps its history in your stats but removes it from today’s choices.</p></form>';
+}
+
+function render() {
+  $('app').dataset.tab = ui.tab;
+  Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.tab === ui.tab)); });
+  renderToday(); renderCalendar(); renderCollection();
+}
+
+// ---------- day editor ----------
+function openDay(ds) {
+  if (!active().length) { ui.tab = 'collection'; render(); return; }
+  ui.editDate = ds;
+  var e = data.wears[ds];
+  ui.editWatch = e ? e.w : null;
+  $('dayTitle').textContent = longDate(ds);
+  $('dayEyebrow').textContent = ds === todayIso() ? 'Today' : 'Edit day';
+  $('dayNote').value = e ? (e.note || '') : '';
+  $('clearDay').hidden = !e;
+  paintDayChips();
+  var dlg = $('dayDialog');
+  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+}
+function paintDayChips() {
+  var html = chipsHtml(ui.editWatch, 'day-pick');
+  // A retired watch can still appear on a past day it was worn.
+  var cur = ui.editWatch && watch(ui.editWatch);
+  if (cur && cur.retired) html = '<button type="button" class="chip" data-action="day-pick" data-id="' + cur.id + '" aria-pressed="true"><i style="background:' + cur.color + '"></i><span>' + esc(cur.name) + '<small>Retired</small></span></button>' + html;
+  $('dayChips').innerHTML = html;
+}
+function closeDay() { var dlg = $('dayDialog'); if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); }
+
+// ---------- backup ----------
+function exportBackup() {
+  var payload = JSON.stringify({ app: 'rotation', v: 1, exported: new Date().toISOString(), watches: data.watches, wears: data.wears }, null, 2);
+  var blob = new Blob([payload], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'watch-rotation-backup-' + todayIso() + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  data.lastBackup = todayIso(); save();
+  ui.msg = 'Backup saved to your Downloads folder.';
+  render();
+}
+function validBackup(j) {
+  if (!j || !Array.isArray(j.watches) || !j.wears || typeof j.wears !== 'object') return null;
+  var ids = {};
+  var watches = j.watches.filter(function (w) { return w && typeof w.id === 'string' && typeof w.name === 'string'; }).map(function (w) {
+    ids[w.id] = true;
+    return { id: w.id, name: w.name.slice(0, 60), color: /^#[0-9A-Fa-f]{6}$/.test(w.color) ? w.color : PALETTE[0], added: /^\d{4}-\d{2}-\d{2}$/.test(w.added) ? w.added : todayIso(), retired: !!w.retired };
+  });
+  var wears = {};
+  Object.keys(j.wears).forEach(function (d) {
+    var e = j.wears[d];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d) && e && ids[e.w]) wears[d] = { w: e.w, note: typeof e.note === 'string' ? e.note.slice(0, 120) : '' };
+  });
+  return watches.length ? { watches: watches, wears: wears } : null;
+}
+
+// ---------- events ----------
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest('[data-action]');
+  if (!b) return;
+  var a = b.dataset.action, t = todayIso();
+  if (a === 'tab') { ui.tab = b.dataset.tab; ui.msg = ''; render(); main().scrollTop = 0; }
+  else if (a === 'wear') {
+    var cur = data.wears[t];
+    if (cur && cur.w === b.dataset.id) delete data.wears[t];
+    else data.wears[t] = { w: b.dataset.id, note: cur ? cur.note || '' : '' };
+    save(); render();
+  }
+  else if (a === 'range') { ui.range = +b.dataset.range; render(); }
+  else if (a === 'month') {
+    var y = +ui.month.slice(0, 4), m = +ui.month.slice(5, 7) - 1 + (+b.dataset.step);
+    var d = new Date(y, m, 1, 12); ui.month = d.getFullYear() + '-' + pad(d.getMonth() + 1); render();
+  }
+  else if (a === 'edit-day') openDay(b.dataset.date);
+  else if (a === 'day-pick') { ui.editWatch = ui.editWatch === b.dataset.id ? null : b.dataset.id; paintDayChips(); }
+  else if (a === 'save-day') {
+    if (ui.editWatch) data.wears[ui.editDate] = { w: ui.editWatch, note: $('dayNote').value.trim() };
+    else delete data.wears[ui.editDate];
+    save(); closeDay(); render();
+  }
+  else if (a === 'clear-day') { delete data.wears[ui.editDate]; save(); closeDay(); render(); }
+  else if (a === 'close-day') closeDay();
+  else if (a === 'new-color') { ui.newColor = b.dataset.color; var keep = $('newName').value; renderCollection(); $('newName').value = keep; }
+  else if (a === 'edit-color') { Array.prototype.forEach.call(b.parentNode.children, function (s) { s.setAttribute('aria-pressed', String(s === b)); }); }
+  else if (a === 'edit-watch') { ui.editingWatch = b.dataset.id; renderCollection(); }
+  else if (a === 'cancel-edit') { ui.editingWatch = null; renderCollection(); }
+  else if (a === 'toggle-retire') { var w = watch(b.dataset.id); w.retired = !w.retired; ui.editingWatch = null; save(); render(); }
+  else if (a === 'export') exportBackup();
+  else if (a === 'pick-import') { if (ui.tab !== 'collection') { ui.tab = 'collection'; render(); } $('importFile').click(); }
+  else if (a === 'import-cancel') { ui.importPreview = null; renderCollection(); }
+  else if (a === 'import-replace' || a === 'import-merge') {
+    var imp = ui.importPreview; if (!imp) return;
+    if (a === 'import-replace') data = { v: 1, watches: imp.watches, wears: imp.wears, lastBackup: data.lastBackup };
+    else {
+      imp.watches.forEach(function (w) { if (!watch(w.id)) data.watches.push(w); });
+      Object.keys(imp.wears).forEach(function (d) { data.wears[d] = imp.wears[d]; });
+    }
+    ui.importPreview = null; ui.msg = 'Restored ' + plural(Object.keys(imp.wears).length, 'logged day') + '.';
+    save(); render();
+  }
+});
+function main() { return document.querySelector('main'); }
+
+document.addEventListener('change', function (ev) {
+  if (ev.target.id === 'todayNote') { var e = data.wears[todayIso()]; if (e) { e.note = ev.target.value.trim(); save(); } }
+  if (ev.target.id === 'importFile') {
+    var f = ev.target.files && ev.target.files[0]; if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var parsed = null;
+      try { parsed = validBackup(JSON.parse(reader.result)); } catch (e) { parsed = null; }
+      if (parsed) { ui.importPreview = parsed; ui.msg = ''; }
+      else { ui.importPreview = null; ui.msg = 'That file isn’t a Rotation backup. Choose a .json file saved from this app.'; }
+      renderCollection();
+    };
+    reader.readAsText(f);
+  }
+});
+document.addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  if (ev.target.id === 'addForm') {
+    var name = $('newName').value.trim(); if (!name) return;
+    data.watches.push({ id: uid(), name: name, color: ui.newColor || nextColor(), added: todayIso(), retired: false });
+    ui.newColor = null; ui.msg = name + ' added.';
+    save(); render(); $('newName').focus();
+  }
+  if (ev.target.id === 'editForm') {
+    var w = watch(ev.target.dataset.id), nm = $('editName').value.trim();
+    var sel = ev.target.querySelector('.swatch[aria-pressed="true"]');
+    if (w && nm) { w.name = nm; if (sel) w.color = sel.dataset.color; }
+    ui.editingWatch = null; save(); render();
+  }
+});
+document.addEventListener('visibilitychange', function () { if (!document.hidden) render(); });
+
+load();
+render();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
+})();
+</script>
+</body>
+</html>
