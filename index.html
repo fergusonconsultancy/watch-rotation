@@ -188,6 +188,7 @@ nav button[aria-pressed="true"] svg { color: var(--gold); }
       <div class="row"><button type="button" class="btn primary" data-action="save-day">Save</button><button type="button" class="btn danger" data-action="clear-day" id="clearDay">Clear this day</button></div>
     </form>
   </dialog>
+  <input type="file" id="importFile" hidden>
 </div>
 
 <script>
@@ -386,8 +387,7 @@ function renderCollection() {
       (imp ? '<div class="nudge"><p>This file holds <b>' + plural(imp.watches.length, 'watch', 'watches') + '</b> and <b>' + plural(Object.keys(imp.wears).length, 'logged day') + '</b>.</p>' +
         '<div class="row"><button class="btn primary" data-action="import-replace">Replace everything</button>' + (data.watches.length ? '<button class="btn quiet" data-action="import-merge">Merge with current</button>' : '') + '<button class="btn quiet" data-action="import-cancel">Cancel</button></div></div>' : '') +
       (ui.msg ? '<p class="msg" role="status">' + esc(ui.msg) + '</p>' : '') +
-    '</div>' +
-    '<input type="file" id="importFile" accept="application/json,.json" hidden>';
+    '</div>';
 }
 function swatches(selected, action) {
   return PALETTE.map(function (c) { return '<button type="button" class="swatch" style="background:' + c + '" data-action="' + action + '" data-color="' + c + '" aria-pressed="' + (c === selected) + '" aria-label="Colour ' + c + '"></button>'; }).join('');
@@ -508,18 +508,26 @@ function main() { return document.querySelector('main'); }
 
 document.addEventListener('change', function (ev) {
   if (ev.target.id === 'todayNote') { var e = data.wears[todayIso()]; if (e) { e.note = ev.target.value.trim(); save(); } }
-  if (ev.target.id === 'importFile') {
-    var f = ev.target.files && ev.target.files[0]; if (!f) return;
-    var reader = new FileReader();
-    reader.onload = function () {
-      var parsed = null;
-      try { parsed = validBackup(JSON.parse(reader.result)); } catch (e) { parsed = null; }
-      if (parsed) { ui.importPreview = parsed; ui.msg = ''; }
-      else { ui.importPreview = null; ui.msg = 'That file isn’t a Rotation backup. Choose a .json file saved from this app.'; }
-      renderCollection();
-    };
-    reader.readAsText(f);
-  }
+});
+// The file picker lives outside the re-rendered views. On Android the picker hides the page, and
+// the re-render on return used to replace the input before it could report the chosen file.
+$('importFile').addEventListener('change', function (ev) {
+  var input = ev.target, f = input.files && input.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    var parsed = null;
+    try { parsed = validBackup(JSON.parse(String(reader.result).replace(/^﻿/, ''))); } catch (e) { parsed = null; }
+    if (parsed) { ui.importPreview = parsed; ui.msg = ''; }
+    else { ui.importPreview = null; ui.msg = 'That file isn’t a Rotation backup. Choose the .json file saved from this app.'; }
+    ui.tab = 'collection';
+    render();
+    var target = document.querySelector('[data-action="import-replace"]') || document.querySelector('#collection .msg[role="status"]');
+    if (target) target.scrollIntoView({ block: 'center' });
+  };
+  reader.onerror = function () { ui.msg = 'Couldn’t read that file. Try downloading it again.'; render(); };
+  reader.readAsText(f);
+  input.value = '';
 });
 document.addEventListener('submit', function (ev) {
   ev.preventDefault();
